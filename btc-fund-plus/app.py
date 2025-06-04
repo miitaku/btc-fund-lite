@@ -4,6 +4,7 @@ import requests
 from datetime import datetime
 from PIL import Image
 import base64
+import os # ★ osモジュールをインポート
 
 # --- Secretsから取得 ---
 CRYPTO_API_KEY = st.secrets["cryptopanic"]["api_key"]
@@ -14,22 +15,38 @@ st.set_page_config(page_title="BTCファンダレーダー", layout="wide")
 
 # --- ホーム画像にリンクを付ける ---
 def add_logo_with_link(image_path, link_url, width=80):
-    with open(image_path, "rb") as f:
-        data = f.read()
-        encoded = base64.b64encode(data).decode()
-    st.markdown(
-        f"""
-        <a href="{link_url}">
-            <img src="data:image/png;base64,{encoded}" width="{width}">
-        </a>
-        """,
-        unsafe_allow_html=True
-    )
+    # エラーハンドリングを追加して、もしファイルが見つからなかった場合にメッセージを表示
+    try:
+        with open(image_path, "rb") as f:
+            data = f.read()
+            encoded = base64.b64encode(data).decode()
+        st.markdown(
+            f"""
+            <a href="{link_url}">
+                <img src="data:image/png;base64,{encoded}" width="{width}">
+            </a>
+            """,
+            unsafe_allow_html=True
+        )
+    except FileNotFoundError:
+        st.error(f"エラー: 画像ファイルが見つかりません。パスを確認してください: {image_path}")
+        st.write("---") # エラー表示と区切り
 
 # --- ヘッダー：ロゴ＋タイトルを1行にレイアウト ---
 col_logo, col_title = st.columns([1, 8])
 with col_logo:
-    add_logo_with_link("assets/hiroalufa8001.png", link_url="/")
+    # ★ ここから修正箇所 ★
+    # 現在のスクリプト (app.py) のディレクトリパスを取得
+    # 例: /mount/src/btc-fund-lite/btc-fund-plus/
+    current_script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # 画像ファイルへのフルパスを構築
+    # /mount/src/btc-fund-lite/btc-fund-plus/assets/hiroalufa8001.png
+    image_full_path = os.path.join(current_script_dir, "assets", "hiroalufa8001.png")
+    
+    # 構築したフルパスを関数に渡す
+    add_logo_with_link(image_full_path, link_url="/")
+    # ★ 修正ここまで ★
 
 with col_title:
     st.markdown(
@@ -40,6 +57,7 @@ with col_title:
     )
 
 st.markdown("---")
+
 
 # --- BTC価格取得 ---
 def get_btc_price():
